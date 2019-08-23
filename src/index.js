@@ -7,7 +7,7 @@
  * Visit http://www.pragmaticprogrammer.com/titles/khrust for more book information.
 ***/
 function generate() {
-  fetch('../target/wasm32-unknown-unknown/release/rs_triangulation.wasm').then(response =>
+  fetch('rs_triangulation.wasm').then(response =>
     response.arrayBuffer()
   ).then(bytes => WebAssembly.instantiate(bytes)).then(results => {
     console.log("Starting application...");
