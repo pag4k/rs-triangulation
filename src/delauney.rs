@@ -1,40 +1,26 @@
-use std::ops::Add;
-use std::ops::Div;
-use std::ops::Mul;
-use std::ops::Sub;
 
-use std::fmt::Debug;
+use core::intrinsics::sqrtf32;
+
+use alloc::vec::Vec;
 
 use crate::edge::Edge;
+use crate::notify_progress;
 use crate::triangle::Triangle;
 use crate::vertex::Vertex;
 
-pub fn triangulation<T>(vertices: &[Vertex<T>]) -> Vec<Edge<T>>
-where
-    T: Copy
-        + PartialOrd
-        + Add<Output = T>
-        + Sub<Output = T>
-        + Mul<Output = T>
-        + Div<Output = T>
-        + Mul<f64, Output = T>
-        + Div<f64, Output = T>
-        + Debug,
-    f64: From<T>,
+pub fn triangulation(vertices: &[Vertex]) -> Vec<Edge>
 {
-    let mut closed_triangles: Vec<Triangle<T>> = vec![];
+    let mut closed_triangles: Vec<Triangle> = vec![];
 
-    let mut open_triangles: Vec<Triangle<T>> = vec![];
+    let mut open_triangles: Vec<Triangle> = vec![];
 
     // Assume we have at least 3 triangles.
 
-    //let mut n = vertices.len();
+    let n = vertices.len() + 3;
 
     let enclosing_triangle = get_enclosing_triangle(&vertices);
 
     //dbg!(&enclosing_triangle);
-
-    //n += 3;
 
     open_triangles.push(enclosing_triangle);
 
@@ -45,9 +31,11 @@ where
 
     //dbg!(&sorted_vertices);
 
+    let mut processed_vertices = 0;
+
     for vertex in sorted_vertices.iter() {
         // Create a list of edges to hold the edges of the triangles that will be modifed in this iteration.
-        let mut edge_buffer: Vec<Edge<T>> = Vec::new();
+        let mut edge_buffer: Vec<Edge> = Vec::new();
 
         //dbg!(&vertex);
 
@@ -56,7 +44,7 @@ where
         // 2. If currentVertex is its circumcircles, add its edges to edgeBuffer and remove it from openTriangles.
         open_triangles.retain(|triangle| {
             if triangle.get_squared_circumradius()
-                - f64::from(
+                - f32::from(
                     (vertex.x - triangle.get_circumcenter().x)
                         * (vertex.x - triangle.get_circumcenter().x),
                 )
@@ -90,6 +78,12 @@ where
                 c: *vertex,
             });
         }
+        processed_vertices += 1;
+        if processed_vertices == 10 {
+            unsafe {
+                // notify_progress(processed_vertices as f64 / n as f64);
+            }
+        }
     }
     //dbg!(&closed_triangles);
     //dbg!(&open_triangles);
@@ -107,50 +101,40 @@ where
 
     //closed_triangles
 
-    let all_edges: Vec<Edge<T>> = closed_triangles
+    let all_edges: Vec<Edge> = closed_triangles
         .iter()
         .flat_map(|triangle| triangle.get_edges())
         .collect();
     get_dedup_edges(&all_edges)
 }
 
-struct Box<T>
-where
-    T: Copy,
+struct Box
 {
-    pub min: Vertex<T>,
-    pub max: Vertex<T>,
+    pub min: Vertex,
+    pub max: Vertex,
 }
 
-impl<T> Box<T>
-where
-    T: Copy,
+impl Box
 {
-    pub fn from_tuples(((min_x, min_y), (max_x, max_y)): ((T, T), (T, T))) -> Self {
+    pub fn from_tuples(((min_x, min_y), (max_x, max_y)): ((f32, f32), (f32, f32))) -> Self {
         Box {
             min: Vertex { x: min_x, y: min_y },
             max: Vertex { x: max_x, y: max_y },
         }
     }
 
-    pub fn get_extent(&self) -> Vertex<T>
-    where
-        T: Sub<Output = T>,
+    pub fn get_extent(&self) -> Vertex
     {
         self.max - self.min
     }
 
-    pub fn get_center(&self) -> Vertex<T>
-    where
-        T: Add<Output = T> + Div<f64, Output = T>,
+    pub fn get_center(&self) -> Vertex
     {
         (self.max + self.min) / 2.0
     }
 }
 
-fn get_bounds<T: PartialOrd>(vertices: &[Vertex<T>]) -> Box<T>
-where
-    T: Copy,
+fn get_bounds(vertices: &[Vertex]) -> Box
 {
     // We assume there is at least one element.
     Box::from_tuples(vertices.iter().fold(
@@ -178,14 +162,7 @@ where
     // let max_y = vertices.iter().fold(vertices[0].y, |max_y, vertex| if vertex.y > max_y {vertex.y} else {max_y} );
 }
 
-fn get_enclosing_triangle<T>(vertices: &[Vertex<T>]) -> Triangle<T>
-where
-    T: Copy
-        + PartialOrd
-        + Add<Output = T>
-        + Sub<Output = T>
-        + Mul<f64, Output = T>
-        + Div<f64, Output = T>,
+fn get_enclosing_triangle(vertices: &[Vertex]) -> Triangle
 {
     // This triangle could probably be tighter.
     let bounds = get_bounds(vertices);
@@ -201,9 +178,9 @@ where
         extent.y
     };
 
-    let triangle_size = triangle_radius * 2.0 * f64::sqrt(3.0);
+    let triangle_size = triangle_radius * 2.0 * unsafe { sqrtf32(3.0) };
 
-    let triangle_height = triangle_size * f64::sqrt(3.0) / 2.0;
+    let triangle_height = triangle_size * unsafe { sqrtf32(3.0) / 2.0 };
 
     Triangle {
         a: Vertex {
@@ -221,9 +198,7 @@ where
     }
 }
 
-fn get_unique_edges<T>(edges: &[Edge<T>]) -> Vec<Edge<T>>
-where
-    T: PartialEq + Clone,
+fn get_unique_edges(edges: &[Edge]) -> Vec<Edge>
 {
     let mut unique_indices = Vec::new();
 
@@ -248,9 +223,7 @@ where
     //     .collect()
 }
 
-fn get_dedup_edges<T>(edges: &[Edge<T>]) -> Vec<Edge<T>>
-where
-    T: PartialEq + Clone,
+fn get_dedup_edges(edges: &[Edge]) -> Vec<Edge>
 {
     let mut unique_indices = Vec::new();
 

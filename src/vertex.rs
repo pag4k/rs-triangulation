@@ -1,16 +1,15 @@
-use std::cmp::Ordering;
-use std::ops::Add;
-use std::ops::Div;
-use std::ops::Mul;
-use std::ops::Sub;
 
-#[derive(Debug, Copy, Clone, Eq)]
-pub struct Vertex<T> {
-    pub x: T,
-    pub y: T,
+use core::intrinsics::sqrtf32;
+use core::ops::{Add, Sub, Mul, Div};
+use core::cmp::{Ordering, PartialEq, PartialOrd};
+
+#[derive(Debug, Copy, Clone)]
+pub struct Vertex {
+    pub x: f32,
+    pub y: f32,
 }
 
-impl<T: Add<Output = T>> Add for Vertex<T> {
+impl Add for Vertex {
     type Output = Self;
 
     fn add(self, other: Self) -> Self::Output {
@@ -21,7 +20,7 @@ impl<T: Add<Output = T>> Add for Vertex<T> {
     }
 }
 
-impl<T: Sub<Output = T>> Sub for Vertex<T> {
+impl Sub for Vertex {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self::Output {
@@ -32,7 +31,7 @@ impl<T: Sub<Output = T>> Sub for Vertex<T> {
     }
 }
 
-impl<T: Mul<Output = T>> Mul for Vertex<T> {
+impl Mul for Vertex {
     type Output = Self;
 
     fn mul(self, other: Self) -> Self::Output {
@@ -43,10 +42,10 @@ impl<T: Mul<Output = T>> Mul for Vertex<T> {
     }
 }
 
-impl<T: Div<f64, Output = T>> Div<f64> for Vertex<T> {
+impl Div<f32> for Vertex {
     type Output = Self;
 
-    fn div(self, other: f64) -> Self::Output {
+    fn div(self, other: f32) -> Self::Output {
         Self {
             x: self.x / other,
             y: self.y / other,
@@ -54,13 +53,13 @@ impl<T: Div<f64, Output = T>> Div<f64> for Vertex<T> {
     }
 }
 
-impl<T: PartialEq> PartialEq for Vertex<T> {
+impl PartialEq for Vertex {
     fn eq(&self, other: &Self) -> bool {
         self.x == other.x && self.y == other.y
     }
 }
 
-impl<T: PartialOrd> PartialOrd for Vertex<T> {
+impl PartialOrd for Vertex {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match (
             self.x < other.x,
@@ -76,66 +75,19 @@ impl<T: PartialOrd> PartialOrd for Vertex<T> {
     }
 }
 
-impl<T> Vertex<T>
-where
-    T: Copy,
-    T: Add<Output = T>,
-    T: Sub<Output = T>,
-    T: Mul<Output = T>,
+impl Vertex
 {
-    pub fn magnitude_squared(&self) -> T {
+    pub fn magnitude_squared(&self) -> f32 {
         self.x * self.x + self.y * self.y
     }
 
-    pub fn distance_squared(vertex1: Vertex<T>, vertex2: Vertex<T>) -> T {
+    pub fn distance_squared(vertex1: Vertex, vertex2: Vertex) -> f32 {
         let diff = vertex2 - vertex1;
         diff.x * diff.x + diff.y * diff.y
     }
 
-    pub fn distance(vertex1: Vertex<T>, vertex2: Vertex<T>) -> f64
-    where
-        f64: From<T>,
+    pub fn distance(vertex1: Vertex, vertex2: Vertex) -> f32
     {
-        f64::sqrt(f64::from(Vertex::distance_squared(vertex1, vertex2)))
+        unsafe { sqrtf32(f32::from(Vertex::distance_squared(vertex1, vertex2))) }
     }
 }
-
-// public float Length()
-// {
-// 	float ls = X * X + Y * Y;
-// 	return (float)System.Math.Sqrt((double)ls);
-// }
-
-// public float LengthSquared()
-// {
-// 	return X * X + Y * Y;
-// }
-
-// public static float Distance(Vector2 value1, Vector2 value2)
-// {
-// 	float dx = value1.X - value2.X;
-// 	float dy = value1.Y - value2.Y;
-
-// 	float ls = dx * dx + dy * dy;
-
-// 	return (float)System.Math.Sqrt((double)ls);
-// }
-
-// public override int GetHashCode()
-// {
-// 	int hash = this.X.GetHashCode();
-// 	hash = (((hash << 5) + hash) ^ this.Y.GetHashCode ());
-// 	return hash;
-// }
-
-// public bool Equals(Vector2 other)
-// {
-// 	return this.X == other.X && this.Y == other.Y;
-// }
-
-// public override bool Equals(object obj)
-// {
-// 	if (!(obj is Vector2))
-// 		return false;
-// 	return Equals((Vector2)obj);
-// }

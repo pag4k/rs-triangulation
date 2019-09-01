@@ -1,33 +1,29 @@
-use std::cmp::Ordering;
-use std::fmt::Debug;
 
 use crate::vertex::Vertex;
+use core::cmp::{Ordering, PartialEq, PartialOrd};
 
 #[derive(Debug, Copy, Clone)]
-pub struct Edge<T> {
-    pub a: Vertex<T>,
-    pub b: Vertex<T>,
+pub struct Edge {
+    pub a: Vertex,
+    pub b: Vertex,
 }
 
-// How to prevent the direct construction of the struct?
-
-impl<T: PartialEq> PartialEq for Edge<T> {
+impl PartialEq for Edge {
     fn eq(&self, other: &Self) -> bool {
         self.a == other.a && self.b == other.b
     }
 }
 
-impl<T> Edge<T> {
-    pub fn new(a: Vertex<T>, b: Vertex<T>) -> Self
-    where
-        T: PartialOrd ,
+impl Edge {
+    pub fn new(a: Vertex, b: Vertex) -> Self
     {
-
-        // FIXME: Not sure about this unwrap.
         match a.partial_cmp(&b).unwrap() {
-            Ordering::Less => Edge { a, b },
-            Ordering::Greater => Edge { a: b, b: a },
-            Ordering::Equal => panic!("Cannot construct Edge with a == b."),
+            Ordering::Less => { Edge { a, b } },
+            Ordering::Greater => { Edge { a: b , b: a } },
+            Ordering::Equal => {panic!("Cannot construct Edge with a == b."); }
         }
     }
+    pub fn as_array(&self) -> [f32; 4] {
+        [self.a.x,self.a.y,self.b.x,self.b.y]
+    } 
 }
