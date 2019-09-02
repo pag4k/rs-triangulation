@@ -19,15 +19,27 @@
 </head>
 
 <body>
-  <textarea id="numbers" rows="10" cols="30">439 410 344 473 389 449 183 208 047 006 041 170 174 205 326 291 008 240 240 121 428 380 255 401 241 103 213 257 102 359 057 020 047 442 179 174 160 006 395 421 362 199 050 382 323 413 246 413
-  </textarea>
+  <table style="border: 1px solid black;">
+    <tr>
+      <td>
+        <textarea id="numbers" rows="10" cols="30">050 382 323 413 246 413</textarea>
+        <br>
+        <button onclick="generate()" id="genereteButton">Generate</button>
+        <br>
+        <input id="randomText">
+        <br>
+        <button onclick="get_random_int()" id="randomIntegersButton">Get Random Integers</button>
+        <br>
+        <span id="progress"></span>
+      </td>
+      <td>
+        <canvas id="Canvas" width="1000" height="1000"></canvas>
+        <script src="./index.js"></script>
 
-  <button onclick="generate()" id="genereteButton">Generate</button>
+      </td>
+    </tr>
+  </table>
 
-  <span id="progress"></span>
-  <br>
-  <canvas id="Canvas" width="500" height="500"></canvas>
-  <script src="./index.js"></script>
 </body>
 
 </html>

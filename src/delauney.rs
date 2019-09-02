@@ -1,4 +1,3 @@
-
 use core::intrinsics::sqrtf32;
 
 use alloc::vec::Vec;
@@ -8,52 +7,41 @@ use crate::notify_progress;
 use crate::triangle::Triangle;
 use crate::vertex::Vertex;
 
-pub fn triangulation(vertices: &[Vertex]) -> Vec<Edge>
-{
-    let mut closed_triangles: Vec<Triangle> = vec![];
+pub fn triangulation(vertices: &mut [Vertex]) -> Vec<Edge> {
+    let n = vertices.len() + 3;
+
+    let mut closed_triangles: Vec<Triangle> = Vec::with_capacity(2 * n - 5);
 
     let mut open_triangles: Vec<Triangle> = vec![];
 
-    // Assume we have at least 3 triangles.
+    let enclosing_triangle = get_enclosing_triangle(vertices);
 
-    let n = vertices.len() + 3;
-
-    let enclosing_triangle = get_enclosing_triangle(&vertices);
-
-    //dbg!(&enclosing_triangle);
-
-    open_triangles.push(enclosing_triangle);
+    open_triangles.push(enclosing_triangle.clone());
 
     // Check if there are not duplicates?
 
-    let mut sorted_vertices = vertices.to_vec();
-    sorted_vertices.sort_by(|a, b| a.x.partial_cmp(&b.x).unwrap());
+    vertices.sort_unstable();
+    let (unique_vertices, _) = vertices.partition_dedup();
 
-    //dbg!(&sorted_vertices);
+    //let mut processed_vertices = 0;
 
-    let mut processed_vertices = 0;
-
-    for vertex in sorted_vertices.iter() {
+    for vertex in unique_vertices.iter() {
         // Create a list of edges to hold the edges of the triangles that will be modifed in this iteration.
         let mut edge_buffer: Vec<Edge> = Vec::new();
-
-        //dbg!(&vertex);
 
         // For each triangle in openTriangles, do two verification:
         // 1. If the triangle circumcircle is entirely to the left (along the x-axis) of current vertex, that triangle is done and add it to the triangulation.
         // 2. If currentVertex is its circumcircles, add its edges to edgeBuffer and remove it from openTriangles.
         open_triangles.retain(|triangle| {
-            if triangle.get_squared_circumradius()
-                - f32::from(
-                    (vertex.x - triangle.get_circumcenter().x)
-                        * (vertex.x - triangle.get_circumcenter().x),
-                )
-                < 0.0
+            let circumcenter = triangle.get_circumcenter();
+            if vertex.x > circumcenter.x
+                && triangle.get_squared_circumradius()
+                    < (vertex.x - circumcenter.x) * (vertex.x - circumcenter.x)
             {
                 // To avoid having the enclosing triangle in final list.
                 if !Triangle::has_shared_vertex(triangle, &enclosing_triangle) {
                     // It would be great to actually move the triangle instead of copying it.
-                    closed_triangles.push(*triangle);
+                    closed_triangles.push(triangle.clone());
                 }
                 false
             } else if triangle.is_in_circumcircle(vertex) {
@@ -65,38 +53,45 @@ pub fn triangulation(vertices: &[Vertex]) -> Vec<Edge>
                 true
             }
         });
-        //dbg!(&edge_buffer);
         // Find the edges in edgeBuffer that only appear once in the list.
         let unique_edges = get_unique_edges(&edge_buffer);
-        //dbg!(&unique_edges);
         // For each edge in uniqueEdgeBuffer, add a new triangle in openTriangles based on the edge and
         // currentVertex.
-        for edge in unique_edges.into_iter() {
-            open_triangles.push(Triangle {
-                a: edge.a,
-                b: edge.b,
-                c: *vertex,
-            });
-        }
-        processed_vertices += 1;
-        if processed_vertices == 10 {
-            unsafe {
-                // notify_progress(processed_vertices as f64 / n as f64);
-            }
-        }
+        open_triangles.extend(unique_edges.into_iter().map(|edge| Triangle {
+            a: edge.a,
+            b: edge.b,
+            c: *vertex,
+        }));
+        // for edge in unique_edges.into_iter() {
+        //     open_triangles.push(Triangle {
+        //         a: edge.a,
+        //         b: edge.b,
+        //         c: *vertex,
+        //     });
+        // }
+        // processed_vertices += 1;
+        // if processed_vertices % 100 == 0 {
+        //     unsafe {
+        //         notify_progress(processed_vertices as f32 / n as f32);
+        //     }
+        // }
     }
-    //dbg!(&closed_triangles);
-    //dbg!(&open_triangles);
+
     // Transfert the remaining triangles from openTriangles to the triangulation.
     // Because of the sweepline algorithm, the triangles whose circumcirle is not entirely left of the last
     // vertex were not transfered in closedTriangles.
+    closed_triangles.extend(
+        open_triangles
+            .into_iter()
+            .filter(|triangle| !Triangle::has_shared_vertex(&triangle, &enclosing_triangle)),
+    );
 
-    for triangle in open_triangles.iter() {
-        if !Triangle::has_shared_vertex(triangle, &enclosing_triangle) {
-            // It would be great to actually move the triangle instead of copying it.
-            closed_triangles.push(*triangle);
-        }
-    }
+    // for triangle in open_triangles.into_iter() {
+    //     if !Triangle::has_shared_vertex(&triangle, &enclosing_triangle) {
+    //         // It would be great to actually move the triangle instead of copying it.
+    //         closed_triangles.push(triangle);
+    //     }
+    // }
     //    closed_triangles.append(&mut open_triangles);
 
     //closed_triangles
@@ -105,17 +100,16 @@ pub fn triangulation(vertices: &[Vertex]) -> Vec<Edge>
         .iter()
         .flat_map(|triangle| triangle.get_edges())
         .collect();
+    //all_edges
     get_dedup_edges(&all_edges)
 }
 
-struct Box
-{
+struct Box {
     pub min: Vertex,
     pub max: Vertex,
 }
 
-impl Box
-{
+impl Box {
     pub fn from_tuples(((min_x, min_y), (max_x, max_y)): ((f32, f32), (f32, f32))) -> Self {
         Box {
             min: Vertex { x: min_x, y: min_y },
@@ -123,19 +117,16 @@ impl Box
         }
     }
 
-    pub fn get_extent(&self) -> Vertex
-    {
+    pub fn get_extent(&self) -> Vertex {
         self.max - self.min
     }
 
-    pub fn get_center(&self) -> Vertex
-    {
+    pub fn get_center(&self) -> Vertex {
         (self.max + self.min) / 2.0
     }
 }
 
-fn get_bounds(vertices: &[Vertex]) -> Box
-{
+fn get_bounds(vertices: &[Vertex]) -> Box {
     // We assume there is at least one element.
     Box::from_tuples(vertices.iter().fold(
         (
@@ -162,9 +153,10 @@ fn get_bounds(vertices: &[Vertex]) -> Box
     // let max_y = vertices.iter().fold(vertices[0].y, |max_y, vertex| if vertex.y > max_y {vertex.y} else {max_y} );
 }
 
-fn get_enclosing_triangle(vertices: &[Vertex]) -> Triangle
-{
+fn get_enclosing_triangle(vertices: &[Vertex]) -> Triangle {
     // This triangle could probably be tighter.
+    let sqrt3 = unsafe { sqrtf32(3.0) };
+
     let bounds = get_bounds(vertices);
 
     let extent = bounds.get_extent();
@@ -178,9 +170,9 @@ fn get_enclosing_triangle(vertices: &[Vertex]) -> Triangle
         extent.y
     };
 
-    let triangle_size = triangle_radius * 2.0 * unsafe { sqrtf32(3.0) };
+    let triangle_size = triangle_radius * 2.0 * sqrt3;
 
-    let triangle_height = triangle_size * unsafe { sqrtf32(3.0) / 2.0 };
+    let triangle_height = triangle_size * sqrt3 / 2.0;
 
     Triangle {
         a: Vertex {
@@ -198,8 +190,7 @@ fn get_enclosing_triangle(vertices: &[Vertex]) -> Triangle
     }
 }
 
-fn get_unique_edges(edges: &[Edge]) -> Vec<Edge>
-{
+fn get_unique_edges(edges: &[Edge]) -> Vec<Edge> {
     let mut unique_indices = Vec::new();
 
     for (i, edge1) in edges.iter().enumerate() {
@@ -223,8 +214,7 @@ fn get_unique_edges(edges: &[Edge]) -> Vec<Edge>
     //     .collect()
 }
 
-fn get_dedup_edges(edges: &[Edge]) -> Vec<Edge>
-{
+fn get_dedup_edges(edges: &[Edge]) -> Vec<Edge> {
     let mut unique_indices = Vec::new();
 
     for (i, edge1) in edges.iter().enumerate() {

@@ -1,7 +1,6 @@
-
-use core::intrinsics::sqrtf32;
-use core::ops::{Add, Sub, Mul, Div};
 use core::cmp::{Ordering, PartialEq, PartialOrd};
+use core::intrinsics::sqrtf32;
+use core::ops::{Add, Div, Mul, Sub};
 
 #[derive(Debug, Copy, Clone)]
 pub struct Vertex {
@@ -75,8 +74,16 @@ impl PartialOrd for Vertex {
     }
 }
 
-impl Vertex
-{
+impl Eq for Vertex {}
+
+impl Ord for Vertex {
+    fn cmp(&self, other: &Self) -> Ordering {
+        // Unwrap since PartialOrd will never return None.
+        self.partial_cmp(&other).unwrap()
+    }
+}
+
+impl Vertex {
     pub fn magnitude_squared(&self) -> f32 {
         self.x * self.x + self.y * self.y
     }
@@ -86,8 +93,7 @@ impl Vertex
         diff.x * diff.x + diff.y * diff.y
     }
 
-    pub fn distance(vertex1: Vertex, vertex2: Vertex) -> f32
-    {
+    pub fn distance(vertex1: Vertex, vertex2: Vertex) -> f32 {
         unsafe { sqrtf32(f32::from(Vertex::distance_squared(vertex1, vertex2))) }
     }
 }

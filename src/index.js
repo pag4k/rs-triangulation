@@ -1,11 +1,3 @@
-/***
- * Excerpted from "Programming WebAssembly with Rust",
- * published by The Pragmatic Bookshelf.
- * Copyrights apply to this code. It may not be used to create training material,
- * courses, books, articles, and the like. Contact us if you are in doubt.
- * We make no guarantees that this code is fit for any purpose.
- * Visit http://www.pragmaticprogrammer.com/titles/khrust for more book information.
-***/
 
 const url = 'rs_triangulation.wasm';
 // var importObject = { imports: { imported_func: arg => console.log(arg) } };
@@ -18,14 +10,10 @@ function generate() {
   ).then(bytes => WebAssembly.instantiate(bytes,
     {
       env: {
-        alert: function (ptr, number) {
-          let str = copyCStr(Module, ptr);
-          alert(str + " -> " + number);
+        notify_progress: (percentage) => {
+          //console.log(100 * percentage + "%");
+          document.getElementById("progress").innerHTML = 100 * percentage + "%";
         }
-        //     notify_progress: (percentage) => {
-        //       console.log(100 * percentage + "%");
-        //       document.getElementById("progress").innerText = 100 * percentage + "%";
-        //     }
       }
     }
 
@@ -57,49 +45,6 @@ function generate() {
       DrawEdges(Module, OutputPointer);
 
       Module.dealloc(InputPointer, 4 * NumberArray);
-
-      //const width = 1600;
-      //const height = 800;
-
-      //console.log("Added " + vertices + " vertices...");
-      //const number_vertices = 25000;
-      // for (let i = 0; i < number_vertices; ++i) {
-      //   let x = Math.random() * width;
-      //   let y = Math.random() * height;
-      //   //console.log("Vertex: (" + x + "," + y + ").");
-      //   instance.exports.add_vertex(x, y);
-      // }
-
-      // console.log("Triangulate...");
-      // let number_eges = instance.exports.triangulate();
-
-      // console.log("Drawing " + number_eges + " edges");
-
-      // var canvas = document.getElementById('Canvas');
-      // //Always check for properties and methods, to make sure your code doesn't break in other browsers.
-      // if (canvas.getContext) {
-      //   var context = canvas.getContext('2d');
-      //   context.clearRect(0, 0, canvas.width, canvas.height);
-
-      //   for (let i = 0; i < number_eges; i++) {
-      //     let x1 = instance.exports.get_x1_at(i);
-      //     let x2 = instance.exports.get_x2_at(i);
-      //     let y1 = instance.exports.get_y1_at(i);
-      //     let y2 = instance.exports.get_y2_at(i);
-      //     //console.log("Edge: (" + x1 + "," + y1 + ") -> (" + x2 + "," + y2 + ").");
-
-      //     // Reset the current path
-      //     context.beginPath();
-      //     // Staring point (10,45)
-      //     context.moveTo(x1, y1);
-      //     // End point (180,47)
-      //     context.lineTo(x2, y2);
-      //     // Make the line visible
-      //     context.stroke();
-      //   }
-
-      // }
-
 
     });
 }
@@ -169,7 +114,7 @@ function DrawEdges(Module, Pointer) {
       let y1 = ReadInt32(Buffer, Offset + 16 * i + 4)
       let x2 = ReadInt32(Buffer, Offset + 16 * i + 8)
       let y2 = ReadInt32(Buffer, Offset + 16 * i + 12)
-      console.log("Edge: (" + x1 + "," + y1 + ") -> (" + x2 + "," + y2 + ").");
+      //console.log("Edge: (" + x1 + "," + y1 + ") -> (" + x2 + "," + y2 + ").");
       // Reset the current path
       context.beginPath();
       // Staring point (10,45)
@@ -187,4 +132,18 @@ function DrawEdges(Module, Pointer) {
 
 function ReadInt32(Buffer, Pointer) {
   return u8s_to_u32(Buffer[Pointer + 0], Buffer[Pointer + 1], Buffer[Pointer + 2], Buffer[Pointer + 3]);
+}
+
+function get_random_int() {
+  //      const width = 1600;
+  //      const height = 800;
+
+  //      console.log("Added " + vertices + " vertices...");
+  const Number = document.getElementById('randomText').value
+  const Max = 1000;
+  let integers = [];
+  for (let i = 0; i < Number; ++i) {
+    integers.push(Math.trunc(Math.random() * Max));
+  }
+  document.getElementById('numbers').value = integers.join(' ');
 }
