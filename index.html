@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      background-color: rgb(255, 255, 255);
+    }
+  </style>
+</head>
+
+<body>
+  <table style="border: 1px solid black;">
+    <tr>
+      <td>
+        The list of numbers is divided<br>
+        in consecutive pairs to<br>
+        construct a list of (x,y)<br>
+        coordinates.<br>
+        <textarea id="numbers" rows="10" cols="30">354 96 19 231 491 846 526 92 564 370</textarea>
+        <br>
+        <button onclick="generate()" id="genereteButton">Generate Triangulation</button>
+        <br>
+        Number of integers:<br>
+        <input id="randomText">
+        <br>
+        <button onclick="get_random_int()" id="randomIntegersButton">Get Random Integers</button>
+        <br>
+        <a href="https://github.com/pag4k/rs-triangulation">GitHub</a> - <a
+          href="https://www.linkedin.com/in/pag4k/">Linkedin</a>
+      </td>
+      <td>
+        <canvas id="Canvas" width="1000" height="1000"></canvas>
+        <script src="./src/index.js"></script>
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+
+</html>

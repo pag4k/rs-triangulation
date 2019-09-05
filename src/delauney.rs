@@ -3,7 +3,6 @@ use core::intrinsics::sqrtf32;
 use alloc::vec::Vec;
 
 use crate::edge::Edge;
-use crate::notify_progress;
 use crate::triangle::Triangle;
 use crate::vertex::Vertex;
 
@@ -18,14 +17,17 @@ pub fn triangulation(vertices: &mut [Vertex]) -> Vec<Edge> {
 
     open_triangles.push(enclosing_triangle.clone());
 
-    // Check if there are not duplicates?
-
     vertices.sort_unstable();
     let (unique_vertices, _) = vertices.partition_dedup();
 
-    //let mut processed_vertices = 0;
-
+    let mut last_x = None;
     for vertex in unique_vertices.iter() {
+        if let Some(x) = last_x {
+            if x == vertex.x {
+                continue;
+            }
+        }
+        last_x = Some(vertex.x);
         // Create a list of edges to hold the edges of the triangles that will be modifed in this iteration.
         let mut edge_buffer: Vec<Edge> = Vec::new();
 
@@ -62,19 +64,6 @@ pub fn triangulation(vertices: &mut [Vertex]) -> Vec<Edge> {
             b: edge.b,
             c: *vertex,
         }));
-        // for edge in unique_edges.into_iter() {
-        //     open_triangles.push(Triangle {
-        //         a: edge.a,
-        //         b: edge.b,
-        //         c: *vertex,
-        //     });
-        // }
-        // processed_vertices += 1;
-        // if processed_vertices % 100 == 0 {
-        //     unsafe {
-        //         notify_progress(processed_vertices as f32 / n as f32);
-        //     }
-        // }
     }
 
     // Transfert the remaining triangles from openTriangles to the triangulation.
@@ -86,21 +75,10 @@ pub fn triangulation(vertices: &mut [Vertex]) -> Vec<Edge> {
             .filter(|triangle| !Triangle::has_shared_vertex(&triangle, &enclosing_triangle)),
     );
 
-    // for triangle in open_triangles.into_iter() {
-    //     if !Triangle::has_shared_vertex(&triangle, &enclosing_triangle) {
-    //         // It would be great to actually move the triangle instead of copying it.
-    //         closed_triangles.push(triangle);
-    //     }
-    // }
-    //    closed_triangles.append(&mut open_triangles);
-
-    //closed_triangles
-
     let all_edges: Vec<Edge> = closed_triangles
         .iter()
         .flat_map(|triangle| triangle.get_edges())
         .collect();
-    //all_edges
     get_dedup_edges(&all_edges)
 }
 
@@ -146,11 +124,6 @@ fn get_bounds(vertices: &[Vertex]) -> Box {
             )
         },
     ))
-
-    // let min_x = vertices.iter().fold(vertices[0].x, |min_x, vertex| if vertex.x < min_x {vertex.x} else {min_x} );
-    // let max_x = vertices.iter().fold(vertices[0].x, |max_x, vertex| if vertex.x > max_x {vertex.x} else {max_x} );
-    // let min_y = vertices.iter().fold(vertices[0].y, |min_y, vertex| if vertex.y < min_y {vertex.y} else {min_y} );
-    // let max_y = vertices.iter().fold(vertices[0].y, |max_y, vertex| if vertex.y > max_y {vertex.y} else {max_y} );
 }
 
 fn get_enclosing_triangle(vertices: &[Vertex]) -> Triangle {
@@ -203,15 +176,6 @@ fn get_unique_edges(edges: &[Edge]) -> Vec<Edge> {
         .iter()
         .map(|&index| edges[index].clone())
         .collect()
-    // let mut map: HashMap<Edge<T>, usize> = HashMap::new();
-    // // It would be nice to avoid the clone.
-    // for edge in edges.to_vec() {
-    //     let counter = map.entry(edge).or_insert(0);
-    //     *counter += 1;
-    // }
-    // map.into_iter()
-    //     .filter_map(|(key, value)| if value == 1 as usize { Some(key) } else { None })
-    //     .collect()
 }
 
 fn get_dedup_edges(edges: &[Edge]) -> Vec<Edge> {
@@ -233,13 +197,4 @@ fn get_dedup_edges(edges: &[Edge]) -> Vec<Edge> {
         .iter()
         .map(|&index| edges[index].clone())
         .collect()
-    // let mut map: HashMap<Edge<T>, usize> = HashMap::new();
-    // // It would be nice to avoid the clone.
-    // for edge in edges.to_vec() {
-    //     let counter = map.entry(edge).or_insert(0);
-    //     *counter += 1;
-    // }
-    // map.into_iter()
-    //     .filter_map(|(key, value)| if value == 1 as usize { Some(key) } else { None })
-    //     .collect()
 }

@@ -2,9 +2,9 @@
 #![feature(alloc_error_handler, core_intrinsics, lang_items)]
 #![feature(slice_partition_dedup)]
 
-extern crate wee_alloc;
 #[macro_use]
 extern crate alloc;
+extern crate wee_alloc;
 
 use alloc::vec::Vec;
 use core::{mem, slice};
@@ -26,7 +26,6 @@ fn oom(_: core::alloc::Layout) -> ! {
     }
 }
 
-// This is the definition of `std::ffi::c_void`, but WASM runs without std in our case.
 #[repr(u8)]
 #[allow(non_camel_case_types)]
 pub enum c_void {
@@ -44,10 +43,6 @@ mod vertex;
 use vertex::Vertex;
 mod delauney;
 use delauney::triangulation;
-
-extern "C" {
-    fn notify_progress(percentage: f32);
-}
 
 #[no_mangle]
 pub extern "C" fn alloc(capacity: usize) -> *mut c_void {
@@ -99,9 +94,6 @@ fn read_vertices(input: &[u8], number_vertices: usize) -> Vec<Vertex> {
         unsafe {
             let x = u8s_to_u32(input.get_unchecked(i..i + 4)) as f32;
             let y = u8s_to_u32(input.get_unchecked(i + 4..i + 8)) as f32;
-
-            // let x = i32::from_be_bytes(slice::slice_from_raw_parts_mut(pointer + (8 * i + 0, 4))) as f32;
-            // let y = i32::from_be_bytes(slice::slice_from_raw_parts_mut(pointer + 8 * i + 4, 4)) as f32;
             vertices.push(Vertex { x, y });
         }
     }

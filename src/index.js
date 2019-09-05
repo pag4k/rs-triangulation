@@ -1,23 +1,11 @@
 
-const url = 'rs_triangulation.wasm';
-// var importObject = { imports: { imported_func: arg => console.log(arg) } };
-
-
+const url = './src/rs_triangulation.wasm';
 
 function generate() {
-  fetch(url).then(response =>
-    response.arrayBuffer()
-  ).then(bytes => WebAssembly.instantiate(bytes,
-    {
-      env: {
-        notify_progress: (percentage) => {
-          //console.log(100 * percentage + "%");
-          document.getElementById("progress").innerHTML = 100 * percentage + "%";
-        }
-      }
-    }
-
-  )).then(results => results.instance)
+  fetch(url)
+    .then(response => response.arrayBuffer())
+    .then(bytes => WebAssembly.instantiate(bytes))
+    .then(results => results.instance)
     .then(instance => {
       const Module = {
         alloc: instance.exports.alloc,
@@ -27,7 +15,6 @@ function generate() {
       };
 
       console.log("Starting application...");
-      //        instance = results.instance;
 
       var NumberArray = [];
       ReadInput(NumberArray);
@@ -45,7 +32,6 @@ function generate() {
       DrawEdges(Module, OutputPointer);
 
       Module.dealloc(InputPointer, 4 * NumberArray);
-
     });
 }
 
@@ -93,7 +79,7 @@ function WriteBuffer(Module, NumberArray) {
 
 function DrawEdges(Module, Pointer) {
   const Buffer = new Uint8Array(Module.memory.buffer.slice(Pointer));
-  const NumberOfEdges = ReadInt32(Buffer, 0); //u8s_to_u32(Buffer[0], Buffer[1], Buffer[2], Buffer[3]);
+  const NumberOfEdges = ReadInt32(Buffer, 0);
 
   console.log("Drawing  " + NumberOfEdges + " edges...");
 
@@ -104,7 +90,6 @@ function DrawEdges(Module, Pointer) {
   let Offset = 4;
 
   var canvas = document.getElementById('Canvas');
-  //Always check for properties and methods, to make sure your code doesn't break in other browsers.
   if (canvas.getContext) {
     var context = canvas.getContext('2d');
     context.clearRect(0, 0, canvas.width, canvas.height);
@@ -114,14 +99,9 @@ function DrawEdges(Module, Pointer) {
       let y1 = ReadInt32(Buffer, Offset + 16 * i + 4)
       let x2 = ReadInt32(Buffer, Offset + 16 * i + 8)
       let y2 = ReadInt32(Buffer, Offset + 16 * i + 12)
-      //console.log("Edge: (" + x1 + "," + y1 + ") -> (" + x2 + "," + y2 + ").");
-      // Reset the current path
       context.beginPath();
-      // Staring point (10,45)
       context.moveTo(x1, y1);
-      // End point (180,47)
       context.lineTo(x2, y2);
-      // Make the line visible
       context.stroke();
     }
 
@@ -135,10 +115,6 @@ function ReadInt32(Buffer, Pointer) {
 }
 
 function get_random_int() {
-  //      const width = 1600;
-  //      const height = 800;
-
-  //      console.log("Added " + vertices + " vertices...");
   const Number = document.getElementById('randomText').value
   const Max = 1000;
   let integers = [];
